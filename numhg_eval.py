@@ -2,6 +2,7 @@ import argparse, re, os
 from typing import List, Union, Iterable
 from itertools import zip_longest
 from compare_mt.rouge.rouge_scorer import RougeScorer
+from moverscore_v2 import word_mover_score, get_idf_dict
 from nltk import sent_tokenize, word_tokenize
 from sklearn.metrics import accuracy_score
 import numpy as np
@@ -67,63 +68,22 @@ def cal_rouge_score(target_path, predict_path):
 
 
 def cal_mover_score(target_path, predict_path):
-    from moverscore_v2 import word_mover_score, get_idf_dict
-    from collections import defaultdict
+    hyp_list, ref_list = [], []
+    with open(target_path,'r') as g:
+        for line in g.readlines():
+            ref_list.append(line.strip())
+        g.close()
 
-    def sentence_score(hypothesis: str, references: List[str], trace=0):
-        idf_dict_hyp = defaultdict(lambda: 1.)
-        idf_dict_ref = defaultdict(lambda: 1.)
-        hypothesis = [hypothesis] * len(references)
-        sentence_score = 0 
-        scores = word_mover_score(references, hypothesis, idf_dict_ref, idf_dict_hyp, stop_words=[], n_gram=2, remove_subwords=False)
-        sentence_score = np.mean(scores)
-        if trace > 0:
-            print(hypothesis, references, sentence_score)
-                
-        return sentence_score
+    with open(predict_path,'r') as r:
+        for line in r.readlines():
+            hyp_list.append(line.strip())
+        r.close()
 
-    def corpus_score(sys_stream: List[str], ref_streams:Union[str, List[Iterable[str]]], trace=0):
-        if isinstance(sys_stream, str):
-            sys_stream = [sys_stream]
-
-        if isinstance(ref_streams, str):
-            ref_streams = [[ref_streams]]
-
-        fhs = [sys_stream] + ref_streams
-
-        corpus_score = 0
-        for lines in tqdm(zip_longest(*fhs)):
-            if None in lines:
-                raise EOFError("Source and reference streams have different lengths!")
-                
-            hypo, *refs = lines
-            corpus_score += sentence_score(hypo, refs, trace=0)
-            
-        corpus_score /= len(sys_stream)
-
-        return corpus_score
-
-    os.environ["TOKENIZERS_PARALLELISM"] = "true"
-    os.environ['MOVERSCORE_MODEL'] = "roberta-large"
-    with open(predict_path) as pred, open(target_path) as target:
-        total_num, sentence_score = 0.0, 0.0
-        hyp_list, ref_list = [], []
-        for (hyp, ref) in tqdm(zip(pred, target)):
-            ref_list.append(ref.strip().strip("\""))
-            hyp_list.append(hyp.strip().strip("\""))
-        idf_dict_hyp = get_idf_dict(hyp_list)
-        idf_dict_ref = get_idf_dict(ref_list)
-        mover_score = word_mover_score(ref_list, hyp_list, idf_dict_ref, idf_dict_hyp, stop_words=[], n_gram=1, remove_subwords=True)
-        print("evaluation MoverScore: %.6f"%(np.mean(mover_score)))
-
-    # with open(predict_path) as pred, open(target_path) as target:
-    #     hyp_list, ref_list = [], []
-    #     for (hyp, ref) in zip(pred, target):
-    #         ref_list.append(ref.strip())
-    #         hyp_list.append(hyp.strip())
-
-    #     mover_score = corpus_score(hyp_list, [ref_list])
-    #     print("evaluation MoverScore: %.6f"%(np.mean(mover_score)))
+    idf_dict_hyp = get_idf_dict(hyp_list)
+    idf_dict_ref = get_idf_dict(ref_list)
+    mover_score = word_mover_score(ref_list, hyp_list, idf_dict_ref, idf_dict_hyp, stop_words=[], n_gram=1, remove_subwords=True)
+    mover = np.mean(mover_score)
+    print("evaluation MoverScore: %.6f"%(mover))
 
 
 def cal_bert_score(target_path, predict_path):

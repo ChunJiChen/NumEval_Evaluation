@@ -13,6 +13,11 @@ Install the package required:
 ```sh
 pip install -r requirements.txt
 ```
+```sh
+git clone https://github.com/AIPHES/emnlp19-moverscore.git
+cd emnlp19-moverscore/
+python setup.py install
+```
 
 
 ## How to Evaluate

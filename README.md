@@ -7,7 +7,7 @@ Here are the dataset and evaluation code from the paper:
 
 ## How to Install
 - `Python version >= 3.7`
-- `PyTorch version >= 1.0.0`
+- `PyTorch version >= 1.10.0`
 
 Install the package required:
 ```sh

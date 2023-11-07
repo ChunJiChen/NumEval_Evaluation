@@ -2,7 +2,6 @@ import argparse, re, os
 from typing import List, Union, Iterable
 from itertools import zip_longest
 from compare_mt.rouge.rouge_scorer import RougeScorer
-from moverscore_v2 import word_mover_score, get_idf_dict
 from nltk import sent_tokenize, word_tokenize
 from sklearn.metrics import accuracy_score
 import numpy as np
@@ -68,6 +67,7 @@ def cal_rouge_score(target_path, predict_path):
 
 
 def cal_mover_score(target_path, predict_path):
+    from moverscore_v2 import word_mover_score, get_idf_dict
     hyp_list, ref_list = [], []
     with open(target_path,'r') as g:
         for line in g.readlines():
